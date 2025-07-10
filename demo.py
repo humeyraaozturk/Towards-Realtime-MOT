@@ -32,7 +32,8 @@ from utils.timer import Timer
 from utils.parse_config import parse_model_cfg
 import utils.datasets as datasets
 from track import eval_seq
-
+import torch 
+import os.path as osp
 
 logger.setLevel(logging.INFO)
 
@@ -43,6 +44,10 @@ def track(opt):
     cfg_dict = parse_model_cfg(opt.cfg)
     opt.img_size = [int(cfg_dict[0]['width']), int(cfg_dict[0]['height'])]
 
+    # CUDA kontrolü
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    logger.info(f'Model will run on: {device}')
+
     # run tracking
     timer = Timer()
     accs = []
@@ -50,15 +55,24 @@ def track(opt):
 
     logger.info('Starting tracking...')
     dataloader = datasets.LoadVideo(opt.input_video, opt.img_size)
+    logger.info(f"Video frame rate: {dataloader.frame_rate}")
+    logger.info(f"Video resolution: {dataloader.vw}x{dataloader.vh}")
+    logger.info(f"Total frames: {len(dataloader)}")
     result_filename = os.path.join(result_root, 'results.txt')
-    frame_rate = dataloader.frame_rate 
 
+    if os.path.exists(result_filename):
+        logger.info(f"Results saved to {result_filename}")
+    else:
+        logger.error("Results file not created!")
+
+    frame_rate = dataloader.frame_rate 
     frame_dir = None if opt.output_format=='text' else osp.join(result_root, 'frame')
     try:
         eval_seq(opt, dataloader, 'mot', result_filename,
                  save_dir=frame_dir, show_image=False, frame_rate=frame_rate)
     except Exception as e:
         logger.info(e)
+        logger.error(f"Error occurred: {e}")
 
     if opt.output_format == 'video':
         output_video_path = osp.join(result_root, 'result.mp4')
@@ -68,12 +82,12 @@ def track(opt):
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='demo.py')
-    parser.add_argument('--cfg', type=str, default='cfg/yolov3_1088x608.cfg', help='cfg file path')
-    parser.add_argument('--weights', type=str, default='weights/latest.pt', help='path to weights file')
-    parser.add_argument('--iou-thres', type=float, default=0.5, help='iou threshold required to qualify as detected')
+    parser.add_argument('--cfg', type=str, default='cfg/yolov3_576x320.cfg', help='cfg file path')
+    parser.add_argument('--weights', type=str, default='weights/jde_576x320_uncertainty.pt', help='path to weights file')
+    parser.add_argument('--iou-thres', type=float, default=0.1, help='iou threshold required to qualify as detected')
     parser.add_argument('--conf-thres', type=float, default=0.5, help='object confidence threshold')
     parser.add_argument('--nms-thres', type=float, default=0.4, help='iou threshold for non-maximum suppression')
-    parser.add_argument('--min-box-area', type=float, default=200, help='filter out tiny boxes')
+    parser.add_argument('--min-box-area', type=float, default=0, help='filter out tiny boxes')
     parser.add_argument('--track-buffer', type=int, default=30, help='tracking buffer')
     parser.add_argument('--input-video', type=str, help='path to the input video')
     parser.add_argument('--output-format', type=str, default='video', choices=['video', 'text'], help='Expected output format. Video or text.')
@@ -83,3 +97,6 @@ if __name__ == '__main__':
 
     track(opt)
 
+"""
+ffmpeg -i ./input/human.mp4 -c:v libx264 -preset fast -crf 22 -c:a aac ./input/human_reencoded.mp4
+"""

@@ -1,4 +1,3 @@
-from numba import jit
 from collections import deque
 import torch
 from utils.kalman_filter import KalmanFilter
@@ -13,7 +12,7 @@ class STrack(BaseTrack):
     def __init__(self, tlwh, score, temp_feat, buffer_size=30):
 
         # wait activate
-        self._tlwh = np.asarray(tlwh, dtype=np.float)
+        self._tlwh = np.asarray(tlwh, dtype=float)
         self.kalman_filter = None
         self.mean, self.covariance = None, None
         self.is_activated = False
@@ -103,7 +102,7 @@ class STrack(BaseTrack):
             self.update_features(new_track.curr_feat)
 
     @property
-    @jit
+    # @jit
     def tlwh(self):
         """Get current position in bounding box format `(top left x, top left y,
                 width, height)`.
@@ -116,7 +115,7 @@ class STrack(BaseTrack):
         return ret
 
     @property
-    @jit
+    # @jit
     def tlbr(self):
         """Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,
         `(top left, bottom right)`.
@@ -126,7 +125,7 @@ class STrack(BaseTrack):
         return ret
 
     @staticmethod
-    @jit
+    # @jit
     def tlwh_to_xyah(tlwh):
         """Convert bounding box to format `(center x, center y, aspect ratio,
         height)`, where the aspect ratio is `width / height`.
@@ -140,14 +139,14 @@ class STrack(BaseTrack):
         return self.tlwh_to_xyah(self.tlwh)
 
     @staticmethod
-    @jit
+    # @jit
     def tlbr_to_tlwh(tlbr):
         ret = np.asarray(tlbr).copy()
         ret[2:] -= ret[:2]
         return ret
 
     @staticmethod
-    @jit
+    # @jit
     def tlwh_to_tlbr(tlwh):
         ret = np.asarray(tlwh).copy()
         ret[2:] += ret[:2]

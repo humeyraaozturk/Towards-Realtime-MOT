@@ -1,0 +1,49 @@
+python 3.9 pyenv ile kuruldu
+
+curl https://pyenv.run | bash
+
+./bashrc içerisine
+export PATH="$HOME/.pyenv/bin:$PATH"
+eval "$(pyenv init --path)"
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
+
+pyenv install 3.9.18
+pyenv local 3.9.18
+python -m venv mot_venv
+
+-cuda 10.1 ile uyumlu torch sürümü kurulur. 1.4 sürümü uyumsuzluk çıkarttı.
+pip install torch==1.8.1+cu101 torchvision==0.9.1+cu101 -f https://download.pytorch.org/whl/torch_stable.html
+
+pip install Cython==0.29.36
+pip install cython_bbox
+
+pip install opencv-python
+
+pip install motmetrics
+
+cd utils/syncb
+git clone https://github.com/ytoon/Synchronized-BatchNorm-PyTorch
+cd Synchronized-BatchNorm-PyTorch/lib/gpu
+python setup.py build_ext --inplace
+
+-ls -l komutu sonrasında syncbn_gpu.cpython-36m-x86_64-linux-gnu.so dosyası bulunuyorsa derleme başarılı
+-python -c "import syncbn_gpu" hata döndürmezse kullanıma hazır
+
+-"ImportError: libc10.so: cannot open shared object file: No such file or directory" hatası için torch kurulu olduğu dizini bulduktan sonra:
+export LD_LIBRARY_PATH=/home/humeyra/Dronmarket/mot_venv/lib/python3.9/site-packages/torch/lib:$LD_LIBRARY_PATH
+
+-Derleme sonucunda oluşan "syncbn_gpu.cpython-39-x86_64-linux-gnu.so" dosyası "/Towards-Realtime-MOT/utils/syncbn/" dizinine taşınır.
+cp syncbn_gpu.cpython-39-x86_64-linux-gnu.so /Towards-Realtime-MOT/utils/syncbn/
+
+
+pip install "numpy<2"
+pip install matplotlib
+pip install numba
+pip install lap
+
+------------NOTLAR------------
+-numpy 1.26.4 sürümünün torch ile uyumsuzluğundan kaynaklı alınan np.float hatasını gidermek için projede bulunan np.float veri tipleri float ile güncellenir. np.float32 veri tiplerinin değiştirilmesine gerek yoktur.
+
+-Pytorch tensorleri Numba ile çalışmadığı için multitracker.py dosyası içerisindeki @jit numba dedektörleri kaldırıldı.
+
